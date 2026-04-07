@@ -1,6 +1,8 @@
-import os, re, requests, tempfile
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+import os
+import re
+import requests
+import tempfile
+from telegram.ext import Updater, MessageHandler, Filters
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 DEEPL_KEY = os.environ["DEEPL_KEY"]
@@ -31,25 +33,27 @@ def transcribe(file_path):
         )
     return r.json()["text"]
 
-async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+def handle_text(update, context):
     text = update.message.text
     if not text or text.startswith("/"):
         return
     lang = detect_lang(text)
     result = translate(text, lang)
-    await update.message.reply_text(result)
+    update.message.reply_text(result)
 
-async def handle_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎙 Секунду...")
-    file = await ctx.bot.get_file(update.message.voice.file_id)
+def handle_voice(update, context):
+    update.message.reply_text("🎙 Секунду...")
+    file = update.message.voice.get_file()
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
-        await file.download_to_drive(tmp.name)
+        file.download(tmp.name)
         text = transcribe(tmp.name)
     lang = detect_lang(text)
     result = translate(text, lang)
-    await update.message.reply_text(f"📝 {text}\n\n🔄 {result}")
+    update.message.reply_text(f"📝 {text}\n\n🔄 {result}")
 
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT, handle_text))
-app.add_handler(MessageHandler(filters.VOICE, handle_voice))
-app.run_polling()
+updater = Updater(BOT_TOKEN)
+dp = updater.dispatcher
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
+dp.add_handler(MessageHandler(Filters.voice, handle_voice))
+updater.start_polling()
+updater.idle()
