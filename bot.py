@@ -16,7 +16,7 @@ def detect_lang(text):
 
 def translate(text, source_lang):
     target = "EN" if source_lang == "RU" else "RU"
-    r = requests.post("https://api.deepl.com/v2/translate",
+    r = requests.post("https://api-free.deepl.com/v2/translate",
         headers={"Authorization": f"DeepL-Auth-Key {DEEPL_KEY}"},
         json={"text": [text], "source_lang": source_lang, "target_lang": target}
     )
