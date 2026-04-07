@@ -16,13 +16,14 @@ def detect_lang(text):
 
 def translate(text, source_lang):
     target = "EN" if source_lang == "RU" else "RU"
-    r = requests.post("https://api-free.deepl.com/v2/translate", data={
-        "auth_key": DEEPL_KEY,
-        "text": text,
-        "source_lang": source_lang,
-        "target_lang": target,
-    })
-    return r.json()["translations"][0]["text"]
+    r = requests.post("https://api.deepl.com/v2/translate",
+        headers={"Authorization": f"DeepL-Auth-Key {DEEPL_KEY}"},
+        json={"text": [text], "source_lang": source_lang, "target_lang": target}
+    )
+    data = r.json()
+    if "translations" not in data:
+        return f"Ошибка: {data}"
+    return data["translations"][0]["text"]
 
 def transcribe(file_path):
     with open(file_path, "rb") as f:
